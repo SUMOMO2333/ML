@@ -6,13 +6,6 @@ import numpy
 import paddle # 导入paddle模块
 import paddle.fluid as fluid
 
-"""
-我们需要设置 inference_program 函数。我们想用这个程序来演示三个不同的分类器，每个分类器都定义为 Python 函数。 
-我们需要将图像数据输入到分类器中。Paddle 为读取数据提供了一个特殊的层 layer.data 层。 
-让我们创建一个数据层来读取图像并将其连接到分类网络。
-"""
-
-
 def softmax_regression(img,label):
     """
     定义softmax分类器：
