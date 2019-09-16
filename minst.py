@@ -6,6 +6,7 @@ import numpy
 import paddle # 导入paddle模块
 import paddle.fluid as fluid
 
+
 class MnistRecognizer():
 
     def __init__(self):
