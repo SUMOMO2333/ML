@@ -1,7 +1,9 @@
-from PIL import Image
+from __future__ import print_function # 将python3中的print特性导入当前版本
+import os
+from PIL import Image # 导入图像处理模块
 import matplotlib.pyplot as plt
-import numpy as np
-import paddle
+import numpy
+import paddle # 导入paddle模块
 import paddle.fluid as fluid
 
 """
