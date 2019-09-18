@@ -173,8 +173,8 @@ def load_test_image(file):
     return im
 
 def inference(save_dirname,im):
-    #place = fluid.CPUPlace()
-    #exe = fluid.Executor(place)
+    place = fluid.CPUPlace()
+    exe = fluid.Executor(place)
     inference_scope = fluid.core.Scope()
     with fluid.scope_guard(inference_scope):
         """
@@ -197,9 +197,9 @@ def inference(save_dirname,im):
 
         #print("results:",results)
         lab = np.argsort(results)
-        img=Image.open('image/infer_3.png')
-        plt.imshow(img)
-        print("Inference result of image/infer_3.png is: %d" % lab[0][0][-1])
+        #img=Image.open('image/infer_3.png')
+        #plt.imshow(im)
+        print("Inference result of image/infer_8.png is: %d" % lab[0][0][-1])
 
 
         return lab
@@ -273,11 +273,11 @@ def main(save_direction):
 if __name__ == '__main__':
     save_direction = "recognize_digits.inference.model"
     #训练模型，储存model
-    main(save_direction)
+    #main(save_direction)
 
     #读取自己手写的数字图片
     file_im = r'./images/infer_8.png'
     im = load_test_image(file_im)
 
     # 对手写图片进行预测
-    #lab = inference(save_dirname,im)
+    lab = inference(save_direction,im)
