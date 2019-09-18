@@ -173,8 +173,8 @@ def load_test_image(file):
     return im
 
 def inference(save_dirname,im):
-    place = fluid.CPUPlace()
-    exe = fluid.Executor(place)
+    #place = fluid.CPUPlace()
+    #exe = fluid.Executor(place)
     inference_scope = fluid.core.Scope()
     with fluid.scope_guard(inference_scope):
         """
@@ -188,20 +188,21 @@ def inference(save_dirname,im):
             save_dirname, exe, None, None)
         # 将feed构建成字典 {feed_target_name: feed_target_data}
         # 结果将包含一个与fetch_targets对应的数据列表
-        print("feed_target_names:",feed_target_names)
+        #print("feed_target_names:",feed_target_names)
         results = exe.run(
             program = inference_program,
             feed = {feed_target_names[0]:im},
             fetch_list = fetch_targets
         )
 
-        print("results:",results)
+        #print("results:",results)
         lab = np.argsort(results)
-        print("lab = ",lab)
+        img=Image.open('image/infer_3.png')
+        plt.imshow(img)
+        print("Inference result of image/infer_3.png is: %d" % lab[0][0][-1])
 
 
         return lab
-
 
 def main(save_direction):
     # 获取数据
