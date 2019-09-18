@@ -275,7 +275,7 @@ if __name__ == '__main__':
     main(save_direction)
 
     #读取自己手写的数字图片
-    file_im = r'./image_cecognition/infer_8.png'
+    file_im = r'./images/infer_8.png'
     im = load_test_image(file_im)
 
     # 对手写图片进行预测
