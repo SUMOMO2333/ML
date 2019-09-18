@@ -164,6 +164,44 @@ def train_test(train_test_program,train_test_feed,train_test_reader,exe,avg_cost
     # 返回平均损失值，平均准确率
     return avg_loss_val_mean, acc_val_mean
 
+def load_test_image(file):
+    """读取自己手写数字的图片"""
+    im = Image.open(file).convert('L')
+    im = im.resize((28, 28), Image.ANTIALIAS)
+    im = np.array(im).reshape(1, 1, 28, 28).astype(np.float32)
+    im = im / 255.0 * 2.0 - 1.0
+    return im
+
+def inference(save_dirname,im):
+    place = fluid.CPUPlace()
+    exe = fluid.Executor(place)
+    inference_scope = fluid.core.Scope()
+    with fluid.scope_guard(inference_scope):
+        """
+        使用 fluid.io.load_inference_model 获取 inference program desc,
+        feed_target_names 用于指定需要传入网络的变量名
+        fetch_targets 指定希望从网络中fetch出的变量名
+        """
+
+        [inference_program, feed_target_names,
+         fetch_targets] = fluid.io.load_inference_model(
+            save_dirname, exe, None, None)
+        # 将feed构建成字典 {feed_target_name: feed_target_data}
+        # 结果将包含一个与fetch_targets对应的数据列表
+        print("feed_target_names:",feed_target_names)
+        results = exe.run(
+            program = inference_program,
+            feed = {feed_target_names[0]:im},
+            fetch_list = fetch_targets
+        )
+
+        print("results:",results)
+        lab = np.argsort(results)
+        print("lab = ",lab)
+
+
+        return lab
+
 
 def main(save_direction):
     # 获取数据
