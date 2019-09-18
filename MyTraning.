@@ -3,7 +3,7 @@ from __future__ import print_function # 将python3中的print特性导入当前�
 import os
 from PIL import Image # 导入图像处理模块
 import matplotlib.pyplot as plt
-import numpy
+import numpy as np
 import paddle # 导入paddle模块
 import paddle.fluid as fluid
 
@@ -35,7 +35,7 @@ def multilayer_perception(img,label):
     return  prediction , label
 
 
-def converlutional_neural_network(img,label):
+def convolutional_neural_network(img,label):
     """
     定义卷积神经网络分类器：
         输入的二维图像经过两个卷积-池化层，使用softmax为激活函数的全连接层作为输出层
@@ -68,24 +68,29 @@ def converlutional_neural_network(img,label):
     return  prediction ,label
 
 
-def train_progam(img,label):
+def train_program(img,lable):
     """
-    配置 train_program
-    :return:
-    predict --分类结果
-    avg_cost --平均损失
-    acc      --准确率
-    """
-    # predict,label = softmax_regression(img,label) #取消注释将使用softmax回归
-    # predict,label = multilayer_perception(img,label) #取消注释将使用多层感知机
-    predict ,label = converlutional_neural_network(img,label) #取消注释将使用卷据-池化网络
+    配置train_program
 
-    #使用交叉熵计算predit和label之间的损失函数
-    cost = fluid.layers.cross_entropy(input = predict,label=label)
+    Return:
+        predict -- 分类的结果
+        avg_cost -- 平均损失
+        acc -- 分类的准确率
+
+    """
+    # 标签层，名称为label,对应输入图片的类别标签
+    label = fluid.layers.data(name='label', shape=[1], dtype='int64')
+
+    # predict = softmax_regression() # 取消注释将使用 Softmax回归
+    # predict = multilayer_perceptron() # 取消注释将使用 多层感知器
+    predict, _ = convolutional_neural_network(img,label) # 取消注释将使用 LeNet5卷积神经网络
+
+    # 使用类交叉熵函数计算predict和label之间的损失函数
+    cost = fluid.layers.cross_entropy(input=predict, label=label)
+    # 计算平均损失
     avg_cost = fluid.layers.mean(cost)
-
-    #计算分类准确率
-    acc = fluid.layers.accuracy(input=predict,label=label)
+    # 计算分类准确率
+    acc = fluid.layers.accuracy(input=predict, label=label)
     return predict, [avg_cost, acc]
 
 
@@ -127,18 +132,16 @@ def event_haddle(pass_id,batch_id,cost):
     print("Pass_id: %d, Batch_id_ %d, Cost: %f" % (pass_id, batch_id, cost))
 
 
-def event_haddle_plot():
-    #将训练过程绘图表示
-    from paddle.utils.plot import Ploter
+from paddle.utils.plot import Ploter
 
-    train_prompt = "Train cost"
-    test_prompt = "Test cost"
-    cost_ploter = Ploter(train_prompt, test_prompt)
+train_prompt = "Train cost"
+test_prompt = "Test cost"
+cost_ploter = Ploter(train_prompt, test_prompt)
 
-    # cost_ploter.append(ploter_title, step, cost)
-    # cost_ploter.plot()
-    # pass
-
+# 将训练过程绘图表示
+def event_handler_plot(ploter_title, step, cost):
+    cost_ploter.append(ploter_title, step, cost)
+    cost_ploter.plot()
 
 def train_test(train_test_program,train_test_feed,train_test_reader,exe,avg_cost,acc):
     #将分类准确率存在acc_set中
@@ -162,7 +165,7 @@ def train_test(train_test_program,train_test_feed,train_test_reader,exe,avg_cost
     return avg_loss_val_mean, acc_val_mean
 
 
-def main(save_dirname):
+def main(save_direction):
     # 获取数据
     train_reader, test_reader = set_Feeder()
     # 输入原始图像数据，大小为28*28*1
@@ -171,7 +174,7 @@ def main(save_dirname):
     label = fluid.layers.data(name='label', shape=[1], dtype='int64')
 
     #定义损失函数、准确率、和预测算法
-    predict, [avg_cost, acc] = train_progam(img,label)
+    predict, [avg_cost, acc] = train_program(img,label)
 
     #定义优化函数,传入损失
     optimizer = optimizer_funtion()
@@ -220,71 +223,22 @@ def main(save_dirname):
         lists.append((epoch_id, avg_loss_val, acc_val))
 
         #保存训练好的模型进行预测
-        if save_dirname is not None:
+        if save_direction is not None:
             fluid.io.save_inference_model(
-                dirname=save_dirname,
+                dirname=save_direction,
                 feeded_var_names=['img'],
                 target_vars = [predict],
                 executor = exe,
             )
 
-
-def inference(save_dirname,im):
-    place = fluid.CPUPlace()
-    exe = fluid.Executor(place)
-    inference_scope = fluid.core.Scope()
-    with fluid.scope_guard(inference_scope):
-        """
-        使用 fluid.io.load_inference_model 获取 inference program desc,
-        feed_target_names 用于指定需要传入网络的变量名
-        fetch_targets 指定希望从网络中fetch出的变量名
-        """
-
-        [inference_program, feed_target_names,
-         fetch_targets] = fluid.io.load_inference_model(
-            save_dirname, exe, None, None)
-        # 将feed构建成字典 {feed_target_name: feed_target_data}
-        # 结果将包含一个与fetch_targets对应的数据列表
-        print("feed_target_names:",feed_target_names)
-        results = exe.run(
-            program = inference_program,
-            feed = {feed_target_names[0]:im},
-            fetch_list = fetch_targets
-        )
-
-        print("results:",results)
-        lab = np.argsort(results)
-        print("lab = ",lab)
-
-
-        return lab
-
-
-
-
-
-
-
-def load_test_image(file):
-    """读取自己手写数字的图片"""
-    im = Image.open(file).convert('L')
-    im = im.resize((28, 28), Image.ANTIALIAS)
-    im = np.array(im).reshape(1, 1, 28, 28).astype(np.float32)
-    im = im / 255.0 * 2.0 - 1.0
-    return im
-
-
-
 if __name__ == '__main__':
-    save_dirname = r"result_train\recognize_digits.inference.model"
+    save_direction = "recognize_digits.inference.model"
     #训练模型，储存model
-    # main(save_dirname)
+    main(save_direction)
 
     #读取自己手写的数字图片
-    file_im = r'traindata\image_cecognition\infer_8.png'
+    file_im = r'./image_cecognition/infer_8.png'
     im = load_test_image(file_im)
 
     # 对手写图片进行预测
-    lab = inference(save_dirname,im)
-
-    print("Inference result of image/infer_{}.png is: {}".format(file_im[-11:],lab[0][0][0]) ) #这里原文是[0][0][-1]是错的，选出来交叉熵最大的数，应该用[0][0][0]选交叉熵最小的数是预测结构。
+    #lab = inference(save_dirname,im)
